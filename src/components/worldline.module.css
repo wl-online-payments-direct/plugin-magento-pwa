@@ -1,0 +1,42 @@
+.loading {
+    composes: root from '~@magento/venia-ui/lib/components/LoadingIndicator/indicator.module.css';
+    text-align: center;
+    height: auto;
+}
+
+div[id=div-hosted-tokenization] {
+    margin: 10px 0;
+}
+
+div[id=div-hosted-tokenization] iframe {
+    width: 100%;
+}
+
+.errorMessages {
+    margin: 20px 0;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    color: rgb(var(--venia-global-color-error));
+    line-height: var(--venia-global-lineHeight-300);
+}
+
+.hostedCheckoutBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+    line-height: 23px;
+    padding: 10px;
+    margin: 10px 0;
+    background: rgba(238, 238, 238, 1);
+    border-radius: 5px;
+    text-transform: uppercase;
+    font-size: 15px;
+    width: 100%;
+}
+
+.hostedCheckout {
+    margin: 10px 0;
+    padding: 0 10px;
+}

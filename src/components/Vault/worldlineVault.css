@@ -1,0 +1,40 @@
+.cars {
+    border: 1px solid rgb(var(--venia-global-color-border));
+    border-radius: 5px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    width: 80%;
+    margin: 10px 15px;
+    justify-content: space-between;
+    transition: .3s;
+}
+.active,
+.cars:hover {
+    border-color: rgb(var(--venia-brand-color-1-100));
+    transform: scale(1.02);
+}
+
+.checkmark {
+    width: 40px;
+    height: 40px;
+}
+
+.checkmark svg path,
+.checkmark svg circle{
+    stroke: #45ce1e;
+}
+
+.form {
+    padding: 10px;
+    display: none;
+}
+
+.activeForm {
+    display: block;
+}
+
+.form iframe {
+    width: 100%;
+}
+
