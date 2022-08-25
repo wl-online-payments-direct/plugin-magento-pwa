@@ -33,6 +33,17 @@ module.exports = (targets) => {
         'talonProps.checkRedirect === null && '
     );
 
+    CheckoutPage.insertAfterSource(
+        'handlePlaceOrder,',
+        '\n        customHandlePlaceOrder,'
+    );
+
+    CheckoutPage.insertBeforeSource(
+        'onClick={handlePlaceOrder}',
+        'onClick={customHandlePlaceOrder}',
+        { remove: 26 }
+    );
+
     CheckoutPaymentMethodSummary.insertAfterSource(
         'const { isLoading, selectedPaymentMethod } = talonProps;',
         `

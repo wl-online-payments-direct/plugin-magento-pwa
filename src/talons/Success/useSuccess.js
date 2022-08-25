@@ -5,7 +5,7 @@ import { useLazyQuery } from "@apollo/client";
 import { useLocation } from "react-router-dom";
 import { paymentMethods } from "@worldline/worldline-payment/src/utils/constants";
 
-const useSuccess = (props) => {
+const useSuccess = () => {
     const operations = mergeOperations(DEFAULT_OPERATIONS);
     const selectedPaymentMethod = JSON.parse(localStorage.getItem('selectedPaymentMethod'));
     const code = selectedPaymentMethod && selectedPaymentMethod.code;
@@ -15,16 +15,16 @@ const useSuccess = (props) => {
     const [ type, setType ] = useState('');
 
     const {
-        getProcessCreditCard,
-        getProcessHosted
+        processCCResult,
+        processHCResult
     } = operations;
 
     const getMethod = () => {
         switch (code) {
             case getCode(paymentMethods.HC.code, code):
-                return getProcessHosted;
+                return processHCResult;
             case getCode(paymentMethods.CC.code, code):
-                return getProcessCreditCard;
+                return processCCResult;
         }
     }
 
@@ -38,7 +38,7 @@ const useSuccess = (props) => {
 
     const [ fetchProcessHosted, { called, data, loading } ] = useLazyQuery(getMethod());
 
-    useEffect(()=>{
+    useEffect(() => {
         switch (code) {
             case getCode(paymentMethods.HC.code, code):
                 setType(paymentMethods.HC.query);
@@ -48,21 +48,24 @@ const useSuccess = (props) => {
                 break;
         }
 
-        if (!sendedRequest && queryParams.get('RETURNMAC') && queryParams.get('hostedCheckoutId') ||
-            !sendedRequest && queryParams.get('RETURNMAC') && queryParams.get('paymentId')) {
-            fetchProcessHosted({
-                variables: {
-                    paymentId: queryParams.get('hostedCheckoutId') || queryParams.get('paymentId'),
-                    mac: queryParams.get('RETURNMAC')
-                },
-            });
-            setSendedRequest(true);
+        if (!sendedRequest && queryParams.get('hostedCheckoutId') || !sendedRequest && queryParams.get('paymentId')) {
+            setTimeout(() => {
+                fetchProcessHosted({
+                    variables: {
+                        paymentId: queryParams.get('hostedCheckoutId') || queryParams.get('paymentId'),
+                        mac: queryParams.get('RETURNMAC') || ''
+                    },
+                });
+                setSendedRequest(true);
+            }, queryParams.get('waitFetch') === '1' ? 2000 : 0); // wait until order being created on backend
         }
     },[queryParams, fetchProcessHosted, setSendedRequest])
 
     return {
         orderIncrementId: data && data[type] && data[type].orderIncrementId,
-        result: data && data[type] && data[type].result
+        result: data && data[type] && data[type].result,
+        sendedRequest,
+        loading
     }
 };
 

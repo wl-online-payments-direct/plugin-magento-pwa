@@ -1,0 +1,22 @@
+.root {
+    display: block;
+}
+
+.icon {
+    max-width: 50px;
+    border: 1px solid rgb(var(--venia-global-color-gray));
+    border-radius: 3px;
+    display: flex;
+}
+
+.totals {
+    margin-top: 10px;
+    max-width: 260px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.totals > span:first-of-type {
+    font-weight: 800;
+    padding-right: 5px;
+}

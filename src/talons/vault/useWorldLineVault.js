@@ -96,8 +96,14 @@ export const useWorldLineVault = props => {
         tokenizer.submitTokenization()
             .then((result) => {
                 if (result.success) {
+                    localStorage.setItem('hostedTokenizationId', JSON.stringify(result.hostedTokenizationId));
+
                     updatePaymentMethod({
-                        variables: { cartId, publicHash: active.publicHash,   }
+                        variables: {
+                            cartId,
+                            hostedTokenizationId: result.hostedTokenizationId,
+                            publicHash: active.publicHash
+                        }
                     });
                 } else if (result.error) {
                     addToast({

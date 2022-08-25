@@ -66,6 +66,7 @@ export const useWorldLine = props => {
         tokenizer.submitTokenization()
             .then((result) => {
                 if (result.success) {
+                    localStorage.setItem('hostedTokenizationId', JSON.stringify(result.hostedTokenizationId));
                     const data =  updatePaymentMethod({
                         variables: { cartId, hostedTokenizationId: result.hostedTokenizationId, isActivePaymentTokenEnabler: !!worldLineConfig.storeConfig.worldline_cc_vault_active  }
                     });

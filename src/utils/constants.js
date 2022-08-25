@@ -30,11 +30,11 @@ export const cardTypeMapper = {
 
 export const paymentMethods = {
     CC: {
-        query: 'processCreditCard',
+        query: 'processCCResult',
         code: [ 'worldline_cc', 'worldline_cc_vault' ]
     },
     HC: {
-        query: 'processHosted',
+        query: 'processHCResult',
         code: [ 'worldline_hosted_checkout', 'worldline_hosted_checkout_vault' ]
     }
 }
