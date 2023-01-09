@@ -6,8 +6,6 @@ import { useWorldLine } from "@worldline/worldline-payment/src/talons/useWorldLi
 import LoadingIndicator from "@magento/venia-ui/lib/components/LoadingIndicator";
 import defaultClasses from './worldline.module.css'
 import BillingAddress from '@magento/venia-ui/lib/components/CheckoutPage/BillingAddress';
-import IconsList from "./iconsList";
-
 
 const WorldLine = props => {
     const classes = useStyle(defaultClasses, props.classes);
@@ -19,7 +17,6 @@ const WorldLine = props => {
 
     return (
         <>
-            <IconsList code={'worldline_cc'} />
             <div id="div-hosted-tokenization"></div>
             {!isLoading && !errorScriptLoading && (
                 <BillingAddress

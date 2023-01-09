@@ -1,17 +1,28 @@
 import React, { Fragment, useCallback, useState } from 'react';
 import { useStyle } from '@magento/venia-ui/lib/classify';
-import { useWorldLineHostedCheckoutVault } from "@worldline/worldline-payment/src/talons/vault/useWorldLineHostedCheckoutVault";
+import { shape, string, bool, func } from 'prop-types';
+import { FormattedMessage } from "react-intl";
+import { useWorldLineRedirectCheckoutVault } from "@worldline/worldline-payment/src/talons/vault/useWorldLineRedirectCheckoutVault";
 import defaultClasses from './worldlineVault.module.css'
 import BillingAddress from '@magento/venia-ui/lib/components/CheckoutPage/BillingAddress';
-import { FormattedMessage } from "react-intl";
 import { getCardImages } from "@worldline/worldline-payment/src/utils/constants";
 
-const WorldLineHostedCheckoutVault = props => {
+const WorldLineRedirectCheckoutVault = props => {
     const classes = useStyle(defaultClasses, props.classes);
+    const { paymentCode } = props;
+    const cardsExisting = [];
     const [activeIndex, setIndex] = useState(null);
     const {cards, loading, handleClickActive, onBillingAddressChangedError,
-        onBillingAddressChangedSuccess} = useWorldLineHostedCheckoutVault(props);
-    const cardsExisting = cards && cards.filter(item => item.payment_method_code === 'worldline_hosted_checkout') || [];
+        onBillingAddressChangedSuccess} = useWorldLineRedirectCheckoutVault(props);
+
+    if (cards && cards.length) {
+        cards.forEach(function (card) {
+            if (paymentCode.indexOf(card.payment_method_code) !== -1) {
+                cardsExisting.push(card);
+            }
+        });
+    }
+
     const handleClick = useCallback(async (token, index, publicHash) => {
         await setIndex(index);
         handleClickActive(token, index, publicHash);
@@ -24,10 +35,11 @@ const WorldLineHostedCheckoutVault = props => {
                 const publicHash = item.public_hash;
                 const details = JSON.parse(item.details);
                 const image = getCardImages(details.type);
+                const methodCode = item.payment_method_code;
 
                 return (
                     <Fragment key={index}>
-                        <div key={index} className={`${classes.cars} ${activeIndex === index && classes.active}`} onClick={()=> handleClick(token, index, publicHash)}>
+                        <div key={index} className={`${classes.cars} ${activeIndex === index && classes.active}`} onClick={()=> handleClick(token, index, publicHash, methodCode )}>
                             <div className={classes.details}>
                                 <span className={classes.type}>
                                     { image ? <img alt={details.type} src={image} width={40}/> : details.type}
@@ -90,4 +102,4 @@ const WorldLineHostedCheckoutVault = props => {
     )
 };
 
-export default WorldLineHostedCheckoutVault;
+export default WorldLineRedirectCheckoutVault;

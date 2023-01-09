@@ -1,15 +1,19 @@
 import { useCallback, useEffect } from 'react';
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import mergeOperations from '@magento/peregrine/lib/util/shallowMerge';
 import DEFAULT_OPERATIONS from './worldLine.gql';
-import { useCartContext } from "@magento/peregrine/lib/context/cart";
+import { useCartContext } from '@magento/peregrine/lib/context/cart';
 
-export const useWorldLineHostedCheckout = props => {
+export const useWorldLineRedirectPayment = props => {
     const operations = mergeOperations(DEFAULT_OPERATIONS);
-    const { setPaymentMethodHostedCheckout } = operations;
-    const { resetShouldSubmit, onPaymentSuccess, onPaymentError, shouldSubmit } = props;
+    const { setPaymentMethodRedirectPayment } = operations;
+    const {
+        resetShouldSubmit,
+        onPaymentSuccess,
+        onPaymentError,
+        paymentCode
+    } = props;
     const [{ cartId }] = useCartContext();
-
 
     const [
         updatePaymentMethod,
@@ -18,7 +22,7 @@ export const useWorldLineHostedCheckout = props => {
             called: paymentMethodMutationCalled,
             loading: paymentMethodMutationLoading
         }
-    ] = useMutation(setPaymentMethodHostedCheckout);
+    ] = useMutation(setPaymentMethodRedirectPayment);
 
     /**
      * This function will be called if cant not set address.
@@ -31,19 +35,20 @@ export const useWorldLineHostedCheckout = props => {
      * This function will be called if address was successfully set.
      */
     const onBillingAddressChangedSuccess = useCallback(async () => {
-            await updatePaymentMethod({
-                variables: {
-                    cartId,
-                    colorDepth: window.screen.colorDepth.toString(),
-                    javaEnabled: window.navigator.javaEnabled(),
-                    locale: window.navigator.language.toString(),
-                    screenHeight: window.screen.height.toString(),
-                    screenWidth: window.screen.width.toString(),
-                    timezoneOffsetUtcMinutes: (new Date()).getTimezoneOffset().toString()
-                }
-            });
-
-    }, [updatePaymentMethod, cartId]);
+        await updatePaymentMethod({
+            variables: {
+                cartId,
+                paymentCode: paymentCode,
+                paymentId: +paymentCode.replace(/\D/g, ''),
+                colorDepth: window.screen.colorDepth.toString(),
+                javaEnabled: window.navigator.javaEnabled(),
+                locale: window.navigator.language.toString(),
+                screenHeight: window.screen.height.toString(),
+                screenWidth: window.screen.width.toString(),
+                timezoneOffsetUtcMinutes: (new Date()).getTimezoneOffset().toString()
+            }
+        });
+    }, [updatePaymentMethod, cartId, paymentCode]);
 
     useEffect(() => {
         const paymentMethodMutationCompleted =
@@ -69,4 +74,3 @@ export const useWorldLineHostedCheckout = props => {
         onBillingAddressChangedSuccess
     };
 };
-

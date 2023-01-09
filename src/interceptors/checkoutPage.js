@@ -12,9 +12,19 @@ module.exports = (targets) => {
         '@magento/venia-ui/lib/components/CheckoutPage/PaymentInformation/summary.js'
     );
 
+    const CheckoutPaymentMethods = targetables.reactComponent(
+        '@magento/venia-ui/lib/components/CheckoutPage/PaymentInformation/paymentMethods.js'
+    );
+
     talonsTarget.tap((talonWrapperConfig) => {
         talonWrapperConfig.CheckoutPage.useCheckoutPage.wrapWith(
             "@worldline/worldline-payment/src/talons/CheckoutPage/useCheckoutPage.js"
+        );
+    });
+
+    talonsTarget.tap((talonWrapperConfig) => {
+        talonWrapperConfig.CheckoutPage.PaymentInformation.usePaymentMethods.wrapWith(
+            "@worldline/worldline-payment/src/talons/CheckoutPage/PaymentInformation/usePaymentMethods.js"
         );
     });
 
@@ -51,5 +61,10 @@ module.exports = (targets) => {
                 localStorage.setItem('selectedPaymentMethod', JSON.stringify(selectedPaymentMethod));
             }
         `
+    );
+
+    CheckoutPaymentMethods.insertAfterSource(
+        '<PaymentMethodComponent',
+        '\n                    paymentCode={code}'
     );
 };

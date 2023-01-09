@@ -36,6 +36,10 @@ export const paymentMethods = {
     HC: {
         query: 'processHCResult',
         code: [ 'worldline_hosted_checkout', 'worldline_hosted_checkout_vault' ]
+    },
+    RP: {
+        query: 'processRPResult',
+        code: [ 'worldline_redirect_payment', 'worldline_redirect_payment_vault' ]
     }
 }
 
