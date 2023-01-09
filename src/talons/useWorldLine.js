@@ -68,7 +68,17 @@ export const useWorldLine = props => {
                 if (result.success) {
                     localStorage.setItem('hostedTokenizationId', JSON.stringify(result.hostedTokenizationId));
                     const data =  updatePaymentMethod({
-                        variables: { cartId, hostedTokenizationId: result.hostedTokenizationId, isActivePaymentTokenEnabler: !!worldLineConfig.storeConfig.worldline_cc_vault_active  }
+                        variables: {
+                            cartId,
+                            hostedTokenizationId: result.hostedTokenizationId,
+                            isActivePaymentTokenEnabler: !!worldLineConfig.storeConfig.worldline_cc_vault_active,
+                            colorDepth: window.screen.colorDepth.toString(),
+                            javaEnabled: window.navigator.javaEnabled(),
+                            locale: window.navigator.language.toString(),
+                            screenHeight: window.screen.height.toString(),
+                            screenWidth: window.screen.width.toString(),
+                            timezoneOffsetUtcMinutes: (new Date()).getTimezoneOffset().toString()
+                        }
                     });
                 } else if (result.error) {
                     console.log('result.message',result.message);
@@ -86,7 +96,7 @@ export const useWorldLine = props => {
         const script = document.createElement('script');
         script.async = true;
         script.src_type = 'url';
-        script.src = `https://payment.preprod.direct.ingenico.com/hostedtokenization/js/client/tokenizer.min.js`;
+        script.src = `https://payment.preprod.direct.worldline-solutions.com/hostedtokenization/js/client/tokenizer.min.js`;
         script.onload = () => setScriptLoad(true);
         script.onerror = () => setScriptError(true);
         document.body.appendChild(script);

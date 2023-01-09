@@ -13,6 +13,10 @@ import { CHECKOUT_STEP } from "@magento/peregrine/lib/talons/CheckoutPage/useChe
 import { useUserContext } from "@magento/peregrine/lib/context/user";
 
 function isWorldlinePayment (type, code) {
+    if (code.indexOf('worldline_redirect_payment') !== -1) {
+        code = 'worldline_redirect_payment';
+    }
+
     return paymentMethods[type].code.includes(code);
 }
 
@@ -29,6 +33,7 @@ const wrapUseCheckoutPage = (original) => {
             getOrderDetailsQuery,
             worldlineHCPlaceOrderMutation,
             worldlineCCPlaceOrderMutation,
+            worldlineRPPlaceOrderMutation,
             createCartMutation
         } = operations;
         const [fetchRedirectUrl, { called,  data, loading }] = useLazyQuery(getRedirectUrl);
@@ -50,6 +55,7 @@ const wrapUseCheckoutPage = (original) => {
         const [checkoutStep, setCheckoutStep] = useState(
             CHECKOUT_STEP.SHIPPING_ADDRESS
         );
+        const [isPlaceOrderWordlineDone, setIsPlaceOrderWordlineDone] = useState(false);
 
         const [{ isSignedIn }] = useUserContext();
         const [{ cartId }, { createCart, removeCart }] = useCartContext();
@@ -69,7 +75,11 @@ const wrapUseCheckoutPage = (original) => {
         const customHandlePlaceOrder = useCallback(() => {
             const method = JSON.parse(localStorage.getItem('selectedPaymentMethod'));
 
-            if (method && (isWorldlinePayment('HC', method.code) || isWorldlinePayment('CC', method.code))) {
+            if (method && (
+                isWorldlinePayment('HC', method.code)
+                || isWorldlinePayment('CC', method.code)
+                || isWorldlinePayment('RP', method.code))
+            ) {
                 handlePlaceOrderWorldline();
             } else {
                 handlePlaceOrder();
@@ -94,6 +104,15 @@ const wrapUseCheckoutPage = (original) => {
             }
         ] = useMutation(worldlineCCPlaceOrderMutation);
 
+        const [
+            worldlineRPPlaceOrder,
+            {
+                data: rp_data,
+                error: rp_error,
+                loading: rp_loading
+            }
+        ] = useMutation(worldlineRPPlaceOrderMutation);
+
         useEffect(() => {
             async function placeOrderWorldline() {
                 try {
@@ -116,6 +135,17 @@ const wrapUseCheckoutPage = (original) => {
                         });
                     }
 
+                    if (method && isWorldlinePayment('RP', method.code)) {
+                        let methodCode = method.code;
+
+                        await worldlineRPPlaceOrder({
+                            variables: {
+                                cartId,
+                                methodCode
+                            }
+                        });
+                    }
+
                     if (isSignedIn) {
                         await removeCart();
                         await clearCartDataFromCache(apolloClient);
@@ -124,6 +154,8 @@ const wrapUseCheckoutPage = (original) => {
                     await createCart({
                         fetchCartId
                     });
+
+                    setIsPlaceOrderWordlineDone(true);
                 } catch (err) {
                     console.error(
                         'An error occurred during when placing the order',
@@ -152,13 +184,19 @@ const wrapUseCheckoutPage = (original) => {
         ]);
 
         useEffect(() => {
-            if (hc_data && hc_data.processHCRedirectRequest && hc_data.processHCRedirectRequest.redirect_url) {
+            if (hc_data && hc_data.processHCRedirectRequest && hc_data.processHCRedirectRequest.redirect_url && isPlaceOrderWordlineDone) {
                 window.location = hc_data.processHCRedirectRequest.redirect_url;
             }
-        },[hc_data]);
+        },[hc_data, isPlaceOrderWordlineDone]);
 
         useEffect(() => {
-            if (cc_data && cc_data.processCCCreateRequest) {
+            if (rp_data && rp_data.processRPRedirectRequest && rp_data.processRPRedirectRequest.redirect_url && isPlaceOrderWordlineDone) {
+                window.location = rp_data.processRPRedirectRequest.redirect_url;
+            }
+        },[rp_data, isPlaceOrderWordlineDone]);
+
+        useEffect(() => {
+            if (cc_data && cc_data.processCCCreateRequest && isPlaceOrderWordlineDone) {
 
                 if (cc_data.processCCCreateRequest.redirect_url) {
                     window.location = cc_data.processCCCreateRequest.redirect_url;
@@ -167,10 +205,10 @@ const wrapUseCheckoutPage = (original) => {
                 if (cc_data.processCCCreateRequest.redirect_url === '') {
                     const paymentId = JSON.parse(localStorage.getItem('hostedTokenizationId'));
 
-                    window.location = `${window.location.origin}/worldline/success?paymentId=${paymentId}&waitFetch=1`;
+                    window.location = `${window.location.origin}/worldline/success?paymentId=${paymentId}`;
                 }
             }
-        },[cc_data]);
+        },[cc_data, isPlaceOrderWordlineDone]);
 
         // Venia Place Order
         useEffect(() => {
@@ -198,6 +236,9 @@ const wrapUseCheckoutPage = (original) => {
                 && hc_data
                 && hc_data.processHCRedirectRequest
                 && hc_data.processHCRedirectRequest.redirect_url
+                && rp_data
+                && rp_data.processRPRedirectRequest
+                && rp_data.processRPRedirectRequest.redirect_url
                 && cc_data
                 && cc_data.processCCCreateRequest
                 && cc_data.processCCCreateRequest.redirect_url,

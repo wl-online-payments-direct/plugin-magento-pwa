@@ -4,7 +4,17 @@
     grid-template-columns: repeat(auto-fill, 80px);
 }
 
+.root:empty {
+    display: none;
+}
+
 .image {
     width: 100%;
     height: auto;
+}
+
+.additional {
+    grid-column-start: 1;
+    grid-column-end: 3;
+    width: 100%;
 }

@@ -1,0 +1,10 @@
+.radio_label {
+    display: flex;
+    align-items: center;
+    composes: font-semibold from global;
+    composes: justify-self-start from global;
+}
+
+.radio_label > ul {
+    margin-right: 10px;
+}

@@ -6,7 +6,7 @@ import DEFAULT_OPERATIONS from '../worldLine.gql';
 import { useCartContext } from "@magento/peregrine/lib/context/cart";
 import { useToasts } from "@magento/peregrine";
 
-export const useWorldLineHostedCheckoutVault = props => {
+export const useWorldLineRedirectCheckoutVault = props => {
     const [active, setActive] = useState(null);
     const [tokenizer, setTokenizer] = useState(null);
     const [isLoading, setIsLoading] = useState(null);
@@ -16,10 +16,10 @@ export const useWorldLineHostedCheckoutVault = props => {
     const operations = mergeOperations(DEFAULT_OPERATIONS, {});
     const {
         getSavedPaymentMethod,
-        setPaymentHostedCheckoutVaultOnCartMutation
+        setPaymentRedirectCheckoutVaultOnCartMutation
     } = operations;
 
-    const { resetShouldSubmit, onPaymentSuccess, onPaymentError, shouldSubmit } = props;
+    const { resetShouldSubmit, onPaymentSuccess, onPaymentError, shouldSubmit, paymentCode } = props;
 
     const [{ cartId }] = useCartContext();
     const [{ isSignedIn }] = useUserContext();
@@ -31,7 +31,7 @@ export const useWorldLineHostedCheckoutVault = props => {
             called: paymentMethodMutationCalled,
             loading: paymentMethodMutationLoading
         }
-    ] = useMutation(setPaymentHostedCheckoutVaultOnCartMutation);
+    ] = useMutation(setPaymentRedirectCheckoutVaultOnCartMutation);
 
     const { data, loading } = useQuery(
         getSavedPaymentMethod,
@@ -47,8 +47,6 @@ export const useWorldLineHostedCheckoutVault = props => {
         resetShouldSubmit();
     }, [resetShouldSubmit]);
 
-
-
     const handleClickActive = useCallback((token, index, publicHash) => {
         setActive({token, index, publicHash});
     },[setActive])
@@ -60,6 +58,7 @@ export const useWorldLineHostedCheckoutVault = props => {
         updatePaymentMethod({
             variables: {
                 cartId,
+                paymentCode: paymentCode,
                 publicHash: active.publicHash,
                 colorDepth: window.screen.colorDepth.toString(),
                 javaEnabled: window.navigator.javaEnabled(),
@@ -69,8 +68,7 @@ export const useWorldLineHostedCheckoutVault = props => {
                 timezoneOffsetUtcMinutes: (new Date()).getTimezoneOffset().toString()
             }
         });
-    }, [updatePaymentMethod, cartId, data, active]);
-
+    }, [updatePaymentMethod, cartId, data, active, paymentCode]);
 
     useEffect(() => {
         const paymentMethodMutationCompleted =
@@ -90,6 +88,7 @@ export const useWorldLineHostedCheckoutVault = props => {
         onPaymentError,
         resetShouldSubmit
     ]);
+
     useEffect(()=>{
         if (paymentMethodMutationError) {
             addToast({

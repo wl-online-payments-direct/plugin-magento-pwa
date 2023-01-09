@@ -53,7 +53,7 @@ export const useWorldLineVault = props => {
             const script = document.createElement('script');
             script.async = true;
             script.src_type = 'url';
-            script.src = `https://payment.preprod.direct.ingenico.com/hostedtokenization/js/client/tokenizer.min.js`;
+            script.src = `https://payment.preprod.direct.worldline-solutions.com/hostedtokenization/js/client/tokenizer.min.js`;
             script.onload = () => setScriptLoad(true);
             script.onerror = () => setScriptError(true);
             document.body.appendChild(script);
@@ -102,7 +102,13 @@ export const useWorldLineVault = props => {
                         variables: {
                             cartId,
                             hostedTokenizationId: result.hostedTokenizationId,
-                            publicHash: active.publicHash
+                            publicHash: active.publicHash,
+                            colorDepth: window.screen.colorDepth.toString(),
+                            javaEnabled: window.navigator.javaEnabled(),
+                            locale: window.navigator.language.toString(),
+                            screenHeight: window.screen.height.toString(),
+                            screenWidth: window.screen.width.toString(),
+                            timezoneOffsetUtcMinutes: (new Date()).getTimezoneOffset().toString()
                         }
                     });
                 } else if (result.error) {

@@ -1,14 +1,21 @@
 import React from 'react';
 import { useStyle } from '@magento/venia-ui/lib/classify';
-import { shape, string } from 'prop-types';
+import {bool, shape, string} from 'prop-types';
 import defaultClasses from './iconsList.module.css'
-import {useIconsList} from "../talons/useIconsList";
+import { useCartInfo } from "../../talons/useCartInfo";
 
 const IconsList = props => {
     const classes = useStyle(defaultClasses, props.classes);
-    const { iconsList } = useIconsList(props);
+    const useAdditionalClasses = props.use_additional_classes || null;
+    const { cartInfo: iconsList } = useCartInfo({ attribute: 'icons', ...props });
 
-    const iconsHtml = iconsList && iconsList.map((item, index) => {
+    let rootClassList = classes.root;
+
+    if (useAdditionalClasses) {
+        rootClassList += ' ' + classes.additional;
+    }
+
+    const html = iconsList && iconsList.map((item, index) => {
         return (
             <li key={index} title={item.icon_title}>
                 <img className={classes.image} src={item.icon_url} alt={item.icon_title} />
@@ -17,8 +24,8 @@ const IconsList = props => {
     });
 
     return (
-        <ul className={classes.root}>
-            {iconsHtml}
+        <ul className={rootClassList}>
+            {html}
         </ul>
     );
 };
@@ -28,7 +35,8 @@ IconsList.propTypes = {
         root: string,
         image: string
     }),
-    code: string.isRequired
+    code: string.isRequired,
+    use_additional_classes: bool
 };
 
 export default IconsList;

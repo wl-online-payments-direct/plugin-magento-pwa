@@ -2,21 +2,22 @@ import React from 'react';
 import { useStyle } from '@magento/venia-ui/lib/classify';
 import { shape, string, bool, func } from 'prop-types';
 import { FormattedMessage } from 'react-intl';
-import { useWorldLineHostedCheckout } from '@worldline/worldline-payment/src/talons/useWorldLineHostedCheckout';
-import defaultClasses from './worldline.module.css';
+import { useWorldLineRedirectPayment } from '@worldline/worldline-payment/src/talons/useWorldLineRedirectPayment';
+import defaultClasses from './worldLineRedirectPayment.module.css';
 import BillingAddress from '@magento/venia-ui/lib/components/CheckoutPage/BillingAddress';
 
-const WorldLineHostedCheckout = props => {
+const WorldLineRedirectPayment = props => {
     const classes = useStyle(defaultClasses, props.classes);
+    const { paymentCode } = props;
     const {
         isLoading,
         errorScriptLoading,
         onBillingAddressChangedError,
         onBillingAddressChangedSuccess
-    } = useWorldLineHostedCheckout(props);
+    } = useWorldLineRedirectPayment(props);
 
     return (
-        <div className={classes.hostedCheckout}>
+        <div className={classes.redirectPayment}>
             {!isLoading && !errorScriptLoading && (
                 <BillingAddress
                     resetShouldSubmit={props.resetShouldSubmit}
@@ -36,7 +37,7 @@ const WorldLineHostedCheckout = props => {
     );
 };
 
-WorldLineHostedCheckout.propTypes = {
+WorldLineRedirectPayment.propTypes = {
     classes: shape({ root: string }),
     payableTo: string,
     mailingAddress: string,
@@ -47,9 +48,9 @@ WorldLineHostedCheckout.propTypes = {
     resetShouldSubmit: func.isRequired
 };
 
-WorldLineHostedCheckout.defaultProps = {
+WorldLineRedirectPayment.defaultProps = {
     payableTo: 'Venia Inc',
     mailingAddress: 'Venia Inc\r\nc/o Payment\r\nPO 122334\r\nAustin Texas'
 };
 
-export default WorldLineHostedCheckout;
+export default WorldLineRedirectPayment;
