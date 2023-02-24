@@ -304,6 +304,8 @@ export const GET_PROCESS_RP= gql`
         processRPResult (paymentId:$paymentId, mac:$mac) {
             result
             orderIncrementId
+            methodCode
+            paymentProductId
         }
     }
 `;
@@ -312,6 +314,8 @@ export const GET_PROCESS_HOSTED= gql`
         processHCResult (paymentId:$paymentId, mac:$mac) {
             result
             orderIncrementId
+            methodCode
+            paymentProductId
         }
     }
 `;
@@ -320,6 +324,8 @@ export const GET_PROCESS_CC= gql`
         processCCResult (paymentId:$paymentId, mac:$mac) {
             result
             orderIncrementId
+            methodCode
+            paymentProductId
         }
     }
 `;

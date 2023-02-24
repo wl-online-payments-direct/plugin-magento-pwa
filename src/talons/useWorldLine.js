@@ -71,7 +71,7 @@ export const useWorldLine = props => {
                         variables: {
                             cartId,
                             hostedTokenizationId: result.hostedTokenizationId,
-                            isActivePaymentTokenEnabler: !!worldLineConfig.storeConfig.worldline_cc_vault_active,
+                            isActivePaymentTokenEnabler: !!Number(worldLineConfig.storeConfig.worldline_cc_vault_active),
                             colorDepth: window.screen.colorDepth.toString(),
                             javaEnabled: window.navigator.javaEnabled(),
                             locale: window.navigator.language.toString(),
