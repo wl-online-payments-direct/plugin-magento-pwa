@@ -8,6 +8,8 @@ import { paymentMethods } from '@worldline/worldline-payment/src/utils/constants
 const FETCH_TIMEOUT = 1000;
 const FETCH_ITERATIONS = 15;
 
+const MULTIBANKO_CODE = 5500;
+
 const useSuccess = () => {
     const operations = mergeOperations(DEFAULT_OPERATIONS);
     const selectedPaymentMethod = JSON.parse(
@@ -22,6 +24,8 @@ const useSuccess = () => {
     const [isOrder, setIsOrder] = useState(false);
     const [status, setStatus] = useState('');
     const [incrementId, setIncrementId] = useState(null);
+    const [methodCode, setMethodCode] = useState(null);
+    const [paymentProductId, setPaymentProductId] = useState(null);
 
     const {
         processCCResult,
@@ -35,6 +39,8 @@ const useSuccess = () => {
     const getPureMethod = (code) => {
         return code.indexOf('worldline_redirect_payment') === 0 ? 'worldline_redirect_payment' : code;
     };
+
+    const isMultibanko = code.indexOf('_' + MULTIBANKO_CODE) !== -1;
 
     const getMethod = () => {
         let pureCode = getPureMethod(code);
@@ -135,6 +141,14 @@ const useSuccess = () => {
             setIncrementId(data[type].orderIncrementId);
         }
 
+        if (data && data[type] && data[type].methodCode) {
+            setMethodCode(data[type].methodCode);
+        }
+
+        if (data && data[type] && data[type].paymentProductId) {
+            setPaymentProductId(data[type].paymentProductId);
+        }
+
         if (data && data[type] && data[type].result === 'waiting') {
             setIsCheckingOrder(true);
         }
@@ -162,10 +176,13 @@ const useSuccess = () => {
     return {
         orderIncrementId: incrementId,
         status: status,
+        methodCode: methodCode,
+        paymentProductId: paymentProductId,
         processResultSent,
         pendingOrderCalled,
         loading,
-        createCartMutation
+        createCartMutation,
+        isMultibanko
     };
 };
 

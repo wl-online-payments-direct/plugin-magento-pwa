@@ -21,7 +21,8 @@ const RedirectPaymentIds = [
     '840',
     '5772',
     '1',
-    '863'
+    '863',
+    '5500'
 ];
 
 module.exports = RedirectPaymentIds;

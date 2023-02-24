@@ -26,5 +26,10 @@
  
 7. Run the Watch command: `yarn watch`.
 
+## Release notes
 
+#### 1.5.0
+- Support the 13.0.0 version of PWA.
 
+#### 1.4.0
+- Support the 12.7.0 version of PWA.

@@ -5,4 +5,13 @@
 .heading {
     font-weight: bold;
     font-size: 25px;
+    margin-bottom: 40px;
+}
+.mainContainer {
+    composes: col-start-1 from global;
+    composes: grid from global;
+    composes: gap-y-xs from global;
+
+    margin: 40px;
+    padding: 20px;
 }
