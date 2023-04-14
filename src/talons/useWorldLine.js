@@ -11,7 +11,9 @@ export const useWorldLine = props => {
     const [isScriptLoaded, setScriptLoad] = useState(null);
     const [isScriptError, setScriptError] = useState(null);
     const [tokenizer, setTokenizer] = useState(null);
+    const [tokenizerData, setTokenizerData] = useState(null);
     const [isLoading, setIsLoading] = useState(null);
+    const [isSurchargeEnabled, setIsSurchargeEnabled] = useState(null);
 
     const {
         getConfigWorldLine,
@@ -23,7 +25,15 @@ export const useWorldLine = props => {
         fetchPolicy: 'no-cache'
     });
 
-    const { resetShouldSubmit, onPaymentSuccess, onPaymentError, shouldSubmit } = props;
+    const {
+        resetShouldSubmit,
+        onPaymentSuccess,
+        onPaymentError,
+        shouldSubmit,
+        isSurchargeValid,
+        checkSurchargeStatus,
+        checkSurchargeCalculated
+    } = props;
 
     const [
         updatePaymentMethod,
@@ -34,10 +44,15 @@ export const useWorldLine = props => {
         }
     ] = useMutation(setPaymentMethodOnCartMutation);
 
-    const initialForm = useCallback(() =>{
-        const maintokenizer = new Tokenizer(worldLineConfig.getWorldlineConfig.url, 'div-hosted-tokenization', {hideCardholderName: false});
+    const initialForm = useCallback(() => {
+        const maintokenizer = new Tokenizer(
+            worldLineConfig.getWorldlineConfig.url, 'div-hosted-tokenization', { hideCardholderName: false }
+        );
+
+        setIsSurchargeEnabled(worldLineConfig?.storeConfig?.worldline_is_apply_surcharge);
         setTokenizer(maintokenizer);
         setIsLoading(true);
+
         maintokenizer.initialize()
             .then((e) => {
                 setIsLoading(false);
@@ -63,23 +78,34 @@ export const useWorldLine = props => {
      * This function will be called if address was successfully set.
      */
     const onBillingAddressChangedSuccess = useCallback(async () => {
+        let submitReviewOrder = (data) => {
+            updatePaymentMethod({
+                variables: {
+                    cartId,
+                    hostedTokenizationId: data.hostedTokenizationId,
+                    isActivePaymentTokenEnabler: !!Number(worldLineConfig.storeConfig.worldline_cc_vault_active),
+                    colorDepth: window.screen.colorDepth.toString(),
+                    javaEnabled: window.navigator.javaEnabled(),
+                    locale: window.navigator.language.toString(),
+                    screenHeight: window.screen.height.toString(),
+                    screenWidth: window.screen.width.toString(),
+                    timezoneOffsetUtcMinutes: (new Date()).getTimezoneOffset().toString()
+                }
+            });
+        }
+
+        if (tokenizerData) {
+            submitReviewOrder(tokenizerData);
+
+            return;
+        }
+
         tokenizer.submitTokenization()
             .then((result) => {
                 if (result.success) {
                     localStorage.setItem('hostedTokenizationId', JSON.stringify(result.hostedTokenizationId));
-                    const data =  updatePaymentMethod({
-                        variables: {
-                            cartId,
-                            hostedTokenizationId: result.hostedTokenizationId,
-                            isActivePaymentTokenEnabler: !!Number(worldLineConfig.storeConfig.worldline_cc_vault_active),
-                            colorDepth: window.screen.colorDepth.toString(),
-                            javaEnabled: window.navigator.javaEnabled(),
-                            locale: window.navigator.language.toString(),
-                            screenHeight: window.screen.height.toString(),
-                            screenWidth: window.screen.width.toString(),
-                            timezoneOffsetUtcMinutes: (new Date()).getTimezoneOffset().toString()
-                        }
-                    });
+                    setTokenizerData(result);
+                    submitReviewOrder(result);
                 } else if (result.error) {
                     console.log('result.message',result.message);
                 }
@@ -90,10 +116,11 @@ export const useWorldLine = props => {
             .finally(() => {
                 //redirect to Success page
             });
-    }, [updatePaymentMethod, cartId, tokenizer, worldLineConfig]);
+    }, [updatePaymentMethod, cartId, tokenizer, worldLineConfig, tokenizerData]);
 
     useEffect(()=> {
         const script = document.createElement('script');
+
         script.async = true;
         script.src_type = 'url';
         script.src = `https://payment.preprod.direct.worldline-solutions.com/hostedtokenization/js/client/tokenizer.min.js`;
@@ -120,13 +147,14 @@ export const useWorldLine = props => {
         onPaymentError,
         resetShouldSubmit
     ]);
+
     useEffect(()=>{
         if (paymentMethodMutationError) {
-                addToast({
-                    type: 'error',
-                    message: paymentMethodMutationError.message,
-                    timeout: 3000
-                });
+            addToast({
+                type: 'error',
+                message: paymentMethodMutationError.message,
+                timeout: 3000
+            });
         }
     },[paymentMethodMutationError, addToast])
 
@@ -141,7 +169,15 @@ export const useWorldLine = props => {
         isLoading: loading || isLoading,
         errorScriptLoading: isScriptError,
         onBillingAddressChangedError,
-        onBillingAddressChangedSuccess
+        onBillingAddressChangedSuccess,
+        isSurchargeEnabled,
+        tokenizer,
+        tokenizerData,
+        setTokenizerData,
+        isSurchargeValid,
+        checkSurchargeStatus,
+        checkSurchargeCalculated,
+        worldLineConfig
     };
 };
 

@@ -1,6 +1,33 @@
 import { gql }  from '@apollo/client';
 import {AvailablePaymentMethodsFragment} from "@magento/peregrine/lib/talons/CheckoutPage/PaymentInformation/paymentInformation.gql";
 import {OrderConfirmationPageFragment} from "@magento/peregrine/lib/talons/CheckoutPage/OrderConfirmationPage/orderConfirmationPageFragments.gql";
+import {PriceSummaryFragment} from "@magento/peregrine/lib/talons/CartPage/PriceSummary/priceSummaryFragments.gql";
+
+export const SurchargeInformationFragment = gql`
+    fragment SurchargeInformationFragment on Cart {
+        worldline_surcharging {
+            amount
+            base_amount
+            currency_code
+        }
+    }
+`;
+
+const UPDATE_SURCHARGE_MUTATION = gql`
+    mutation updateSurchargeInformation($cartId: String!, $selectedPaymentMethod: String!) {
+        updateSurchargeInformation(
+            input: { cart_id: $cartId, selected_payment_method: $selectedPaymentMethod }
+        ) @connection(key: "updateSurchargeInformation") {
+            cart {
+                id
+                ...PriceSummaryFragment
+                ...SurchargeInformationFragment
+            }
+        }
+    }
+    ${PriceSummaryFragment}
+    ${SurchargeInformationFragment}
+`;
 
 export const GET_WORLLINE_CONFIG_DATA = gql`
     query getWorldlineConfig {
@@ -9,6 +36,7 @@ export const GET_WORLLINE_CONFIG_DATA = gql`
         }
         storeConfig {
             worldline_cc_vault_active
+            worldline_is_apply_surcharge
         }
     }
 `;
@@ -350,6 +378,16 @@ export const GET_ORDER_DETAILS = gql`
     ${OrderConfirmationPageFragment}
 `;
 
+export const CALCULATE_SURCHARGE = gql`
+    mutation calculateSurcharge($cartId: String!, $hostedTokenizationId:String!) {
+        calculateSurcharge(
+            input: { cart_id: $cartId, hosted_tokenization_id: $hostedTokenizationId }
+        ) {
+            surcharging
+        }
+    }
+`;
+
 export const CREATE_CART = gql`
     mutation createCart {
         cartId: createEmptyCart
@@ -388,5 +426,7 @@ export default {
     worldlineRPPlaceOrderMutation: PROCESS_RP_REDIRECT_REQUEST,
     createCartMutation: CREATE_CART,
     checkOrderQuery: CHECK_ORDER,
-    pendingOrderQuery: PENDING_ORDER
+    pendingOrderQuery: PENDING_ORDER,
+    calculateSurchargeMutation: CALCULATE_SURCHARGE,
+    updateSurchargeMutation: UPDATE_SURCHARGE_MUTATION
 };

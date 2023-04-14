@@ -12,19 +12,29 @@ module.exports = (targets) => {
         '@magento/venia-ui/lib/components/CheckoutPage/PaymentInformation/summary.js'
     );
 
+    const PriceSummary = targetables.reactComponent(
+        '@magento/venia-ui/lib/components/CartPage/PriceSummary/priceSummary.js'
+    );
+
     const CheckoutPaymentMethods = targetables.reactComponent(
         '@magento/venia-ui/lib/components/CheckoutPage/PaymentInformation/paymentMethods.js'
+    );
+
+    const CheckoutPaymentInformation = targetables.reactComponent(
+        '@magento/venia-ui/lib/components/CheckoutPage/PaymentInformation/paymentInformation.js'
+    );
+
+    const surchargeSummary = PriceSummary.addImport(
+        'SurchargeSummary from "@worldline/worldline-payment/src/components/Surcharge/surchargeSummary.js";'
+    );
+
+    const useWlPriceSummary = PriceSummary.addImport(
+        'useWlPriceSummary from "@worldline/worldline-payment/src/talons/CartPage/PriceSummary/useWlPriceSummary";'
     );
 
     talonsTarget.tap((talonWrapperConfig) => {
         talonWrapperConfig.CheckoutPage.useCheckoutPage.wrapWith(
             "@worldline/worldline-payment/src/talons/CheckoutPage/useCheckoutPage.js"
-        );
-    });
-
-    talonsTarget.tap((talonWrapperConfig) => {
-        talonWrapperConfig.CheckoutPage.PaymentInformation.usePaymentMethods.wrapWith(
-            "@worldline/worldline-payment/src/talons/CheckoutPage/PaymentInformation/usePaymentMethods.js"
         );
     });
 
@@ -43,28 +53,129 @@ module.exports = (targets) => {
         'talonProps.checkRedirect === null && '
     );
 
-    CheckoutPage.insertAfterSource(
-        'handlePlaceOrder,',
-        '\n        customHandlePlaceOrder,'
+    //--------------------------------------//
+    // START: SURCHARGE
+    // provide data from the payment methods to the parent checkout component
+    //--------------------------------------//
+
+    CheckoutPage.insertBeforeSource(
+        'onSave={setShippingMethodDone}',
+        'onSave={setShippingMethodDoneWorldline}',
+        { remove: 30 }
     );
 
     CheckoutPage.insertBeforeSource(
-        'onClick={handlePlaceOrder}',
-        'onClick={customHandlePlaceOrder}',
-        { remove: 26 }
+        '} = talonProps;',
+        ',\n     getPaymentMethodValue,' +
+              ' \n     checkSurchargeStatus,' +
+              ' \n     isSurchargeValid,' +
+              ' \n     checkSurchargeCalculated,' +
+              ' \n     setShippingMethodDoneWorldline,'
     );
 
-    CheckoutPaymentMethodSummary.insertAfterSource(
-        'const { isLoading, selectedPaymentMethod } = talonProps;',
-        `
-            if (selectedPaymentMethod) {
-                localStorage.setItem('selectedPaymentMethod', JSON.stringify(selectedPaymentMethod));
-            }
-        `
+    CheckoutPage.insertBeforeSource(
+        'onSave={setPaymentInformationDone}',
+        'onSelect={getPaymentMethodValue} \n' +
+              'checkSurchargeStatus={checkSurchargeStatus} \n' +
+              'isSurchargeValid={isSurchargeValid} \n' +
+              'checkSurchargeCalculated={checkSurchargeCalculated} \n'
+    );
+
+    CheckoutPage.insertBeforeSource(
+        'reviewOrderButtonClicked ||',
+        '!checkSurchargeStatus() || \n'
+    );
+
+    CheckoutPaymentInformation.insertAfterSource(
+        'classes: propClasses,',
+        '\n        onSelect,' +
+              '\n        checkSurchargeStatus,' +
+              '\n        isSurchargeValid,' +
+              '\n        checkSurchargeCalculated,'
+    );
+
+    CheckoutPaymentInformation.insertBeforeSource(
+        'onPaymentError={handlePaymentError}',
+        '\n        onSelect={onSelect}' +
+              '\n        checkSurchargeStatus={checkSurchargeStatus}' +
+              '\n        isSurchargeValid={isSurchargeValid}' +
+              '\n        checkSurchargeCalculated={checkSurchargeCalculated}'
+    );
+
+    CheckoutPaymentInformation.insertAfterSource(
+        'const talonProps = usePaymentInformation({',
+        '\n        onSelect,' +
+              '\n        isSurchargeValid,' +
+              '\n        checkSurchargeStatus,' +
+              '\n        checkSurchargeCalculated,'
     );
 
     CheckoutPaymentMethods.insertAfterSource(
-        '<PaymentMethodComponent',
-        '\n                    paymentCode={code}'
+        'classes: propClasses,',
+        '\n        onSelect,' +
+              '\n        isSurchargeValid,' +
+              '\n        checkSurchargeStatus,' +
+              '\n        checkSurchargeCalculated,'
+    );
+
+    CheckoutPaymentMethods.insertBeforeSource(
+        'onChange={handlePaymentMethodSelection}',
+        'onChange={e => onSelect(e)}',
+        { remove: 39 }
+    );
+
+    PriceSummary.insertBeforeSource(
+        'const talonProps = usePriceSummary();',
+        `const talonProps = ${useWlPriceSummary}();`,
+        { remove: 37 }
+    );
+
+    PriceSummary.insertBeforeSource(
+        '} = flatData;',
+        ', \n surcharge'
+    );
+
+    PriceSummary.insertAfterJSX(
+        'ShippingSummary',
+        `${surchargeSummary}
+            classes={{
+                lineItemLabel: classes.lineItemLabel,
+                price: priceClass
+            }}
+            data={surcharge}
+            isCheckout={isCheckout}
+        `
+    )
+
+    //--------------------------------------//
+    // END: SURCHARGE
+    //--------------------------------------//
+
+
+    CheckoutPage.insertAfterSource(
+    'handlePlaceOrder,',
+    '\n     customHandlePlaceOrder,'
+    );
+
+    CheckoutPage.insertBeforeSource(
+    'onClick={handlePlaceOrder}',
+    'onClick={customHandlePlaceOrder}',
+    { remove: 26 }
+    );
+
+    CheckoutPaymentMethodSummary.insertAfterSource(
+    'const { isLoading, selectedPaymentMethod } = talonProps;',
+    `
+        if (selectedPaymentMethod) {
+            localStorage.setItem('selectedPaymentMethod', JSON.stringify(selectedPaymentMethod));
+        }`
+    );
+
+    CheckoutPaymentMethods.insertAfterSource(
+    '<PaymentMethodComponent',
+    '\n     paymentCode={code}' +
+          '\n     checkSurchargeStatus={checkSurchargeStatus}' +
+          '\n     isSurchargeValid={isSurchargeValid}' +
+          '\n     checkSurchargeCalculated={checkSurchargeCalculated}'
     );
 };
