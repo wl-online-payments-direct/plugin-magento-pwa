@@ -170,5 +170,7 @@ module.exports = targets => {
     require('./src/interceptors/checkoutPage')(targets);
     require('./src/interceptors/paymentMethodGQL')(targets);
     require('./src/interceptors/orderHistoryPaymentMethod')(targets);
+    require('./src/interceptors/orderHistoryPageGQL')(targets);
+    require('./src/interceptors/orderHistoryOrderTotal')(targets);
     require('./src/interceptors/paymentRadioOption')(targets);
 };

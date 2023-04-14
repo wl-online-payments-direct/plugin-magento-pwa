@@ -6,13 +6,26 @@ import { useWorldLineConfig } from "@worldline/worldline-payment/src/talons/useW
 import BillingAddress from '@magento/venia-ui/lib/components/CheckoutPage/BillingAddress';
 import { FormattedMessage } from "react-intl";
 import { getCardImages } from "@worldline/worldline-payment/src/utils/constants";
+import SurchargeButton from "../Surcharge";
 
 const WorldLineVault = props => {
     const classes = useStyle(defaultClasses, props.classes);
     const [activeIndex, setIndex] = useState(null);
     const { config } = useWorldLineConfig();
-    const {cards, loading, handleClickActive, onBillingAddressChangedError,
-        onBillingAddressChangedSuccess} = useWorldLineVault(props);
+    const {
+        cards,
+        handleClickActive,
+        onBillingAddressChangedError,
+        onBillingAddressChangedSuccess,
+        isSurchargeEnabled,
+        tokenizer,
+        setTokenizerData,
+        tokenizerData,
+        worldLineConfig,
+        isSurchargeValid,
+        checkSurchargeStatus,
+        checkSurchargeCalculated
+    } = useWorldLineVault(props);
     const cardsExsiting = cards && cards.filter(item => item.payment_method_code === 'worldline_cc') || [];
     const handleClick = useCallback(async (token, index, publicHash) => {
         await setIndex(index);
@@ -60,12 +73,12 @@ const WorldLineVault = props => {
                                         <circle data-name="layer2"
                                                 cx="32" cy="32" r="30" transform="rotate(-45 32 32)" fill="none"
                                                 stroke="#202020"
-                                                stroke-miterlimit="10" stroke-width="2" stroke-linejoin="round"
-                                                stroke-linecap="round"></circle>
-                                        <path data-name="layer1" fill="none" stroke="#202020" stroke-miterlimit="10"
-                                              stroke-width="2" d="M20.998 32.015l8.992 8.992 16.011-16.011"
-                                              stroke-linejoin="round"
-                                              stroke-linecap="round"></path>
+                                                strokeMiterlimit="10" strokeWidth="2" strokeLinejoin="round"
+                                                strokeLinecap="round"></circle>
+                                        <path data-name="layer1" fill="none" stroke="#202020" strokeMiterlimit="10"
+                                              strokeWidth="2" d="M20.998 32.015l8.992 8.992 16.011-16.011"
+                                              strokeLinejoin="round"
+                                              strokeLinecap="round"></path>
                                     </svg>
                                 }
                             </div>
@@ -84,6 +97,17 @@ const WorldLineVault = props => {
                     </Fragment>
                 )
             })}
+            {isSurchargeEnabled && (
+                <SurchargeButton
+                    tokenizer={tokenizer}
+                    tokenizerData={tokenizerData}
+                    setTokenizerData={setTokenizerData}
+                    worldLineConfig={worldLineConfig}
+                    checkSurchargeStatus={checkSurchargeStatus}
+                    isSurchargeValid={isSurchargeValid}
+                    checkSurchargeCalculated={checkSurchargeCalculated}
+                />
+            )}
             {!cardsExsiting.length &&
                 <span className={classes.errorMessages}>
                     <FormattedMessage

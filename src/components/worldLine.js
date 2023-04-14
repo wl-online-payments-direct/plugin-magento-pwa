@@ -6,18 +6,41 @@ import { useWorldLine } from "@worldline/worldline-payment/src/talons/useWorldLi
 import LoadingIndicator from "@magento/venia-ui/lib/components/LoadingIndicator";
 import defaultClasses from './worldline.module.css'
 import BillingAddress from '@magento/venia-ui/lib/components/CheckoutPage/BillingAddress';
+import SurchargeButton from "./Surcharge";
 
 const WorldLine = props => {
     const classes = useStyle(defaultClasses, props.classes);
+
     const {
         isLoading,
         errorScriptLoading,
         onBillingAddressChangedError,
-        onBillingAddressChangedSuccess} = useWorldLine(props);
+        onBillingAddressChangedSuccess,
+        isSurchargeEnabled,
+        tokenizer,
+        tokenizerData,
+        setTokenizerData,
+        worldLineConfig,
+        isSurchargeValid,
+        checkSurchargeStatus,
+        checkSurchargeCalculated
+    } = useWorldLine(props);
 
     return (
         <>
             <div id="div-hosted-tokenization"></div>
+            {isSurchargeEnabled && (
+                <SurchargeButton
+                    tokenizer={tokenizer}
+                    tokenizerData={tokenizerData}
+                    setTokenizerData={setTokenizerData}
+                    worldLineConfig={worldLineConfig}
+                    checkSurchargeStatus={checkSurchargeStatus}
+                    isSurchargeValid={isSurchargeValid}
+                    checkSurchargeCalculated={checkSurchargeCalculated}
+                />
+            )}
+
             {!isLoading && !errorScriptLoading && (
                 <BillingAddress
                     resetShouldSubmit={props.resetShouldSubmit}

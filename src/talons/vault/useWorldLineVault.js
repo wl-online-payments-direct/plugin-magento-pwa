@@ -9,19 +9,30 @@ import { useToasts } from "@magento/peregrine";
 export const useWorldLineVault = props => {
     const [active, setActive] = useState(null);
     const [tokenizer, setTokenizer] = useState(null);
+    const [tokenizerData, setTokenizerData] = useState(null);
     const [isScriptLoaded, setScriptLoad] = useState(null);
     const [isScriptError, setScriptError] = useState(null);
     const [isLoading, setIsLoading] = useState(null);
     const [configuration, setConfiguration] = useState(null);
+    const [isSurchargeEnabled, setIsSurchargeEnabled] = useState(null);
     const [, { addToast }] = useToasts();
 
     const operations = mergeOperations(DEFAULT_OPERATIONS, {});
     const {
         getSavedPaymentMethod,
-        setPaymentMethodVaultOnCartMutation
+        setPaymentMethodVaultOnCartMutation,
+        getConfigWorldLine
     } = operations;
 
-    const { resetShouldSubmit, onPaymentSuccess, onPaymentError, shouldSubmit } = props;
+    const {
+        resetShouldSubmit,
+        onPaymentSuccess,
+        onPaymentError,
+        shouldSubmit,
+        isSurchargeValid,
+        checkSurchargeStatus,
+        checkSurchargeCalculated
+    } = props;
 
     const [{ cartId }] = useCartContext();
     const [{ isSignedIn }] = useUserContext();
@@ -33,6 +44,10 @@ export const useWorldLineVault = props => {
             loading: paymentMethodMutationLoading
         }
     ] = useMutation(setPaymentMethodVaultOnCartMutation);
+
+    const { data: worldLineConfig } = useQuery(getConfigWorldLine,{
+        fetchPolicy: 'no-cache'
+    });
 
     const { data, loading } = useQuery(
         getSavedPaymentMethod,
@@ -62,6 +77,7 @@ export const useWorldLineVault = props => {
     },[])
 
     const initialForm = useCallback(({token, index, config}) =>{
+        setIsSurchargeEnabled(worldLineConfig?.storeConfig?.worldline_is_apply_surcharge);
         const maintokenizer = new Tokenizer(
             config.getWorldlineConfig.url,
             'div-tokenization-'+index,
@@ -77,7 +93,7 @@ export const useWorldLineVault = props => {
             .catch(({ message }) => {
                 setIsLoading(false);
             })
-    },[active, setTokenizer, tokenizer]);
+    },[active, setTokenizer, tokenizer, worldLineConfig]);
 
     const handleClickActive = useCallback((token, index, config, publicHash) => {
         setActive({token, index, config, publicHash});
@@ -93,24 +109,34 @@ export const useWorldLineVault = props => {
      * This function will be called if address was successfully set.
      */
     const onBillingAddressChangedSuccess = useCallback(() => {
+        let submitReviewOrder = (data) => {
+            updatePaymentMethod({
+                variables: {
+                    cartId,
+                    hostedTokenizationId: data.hostedTokenizationId,
+                    publicHash: active.publicHash,
+                    colorDepth: window.screen.colorDepth.toString(),
+                    javaEnabled: window.navigator.javaEnabled(),
+                    locale: window.navigator.language.toString(),
+                    screenHeight: window.screen.height.toString(),
+                    screenWidth: window.screen.width.toString(),
+                    timezoneOffsetUtcMinutes: (new Date()).getTimezoneOffset().toString()
+                }
+            });
+        }
+
+        if (tokenizerData) {
+            submitReviewOrder(tokenizerData);
+
+            return;
+        }
+
         tokenizer.submitTokenization()
             .then((result) => {
                 if (result.success) {
                     localStorage.setItem('hostedTokenizationId', JSON.stringify(result.hostedTokenizationId));
-
-                    updatePaymentMethod({
-                        variables: {
-                            cartId,
-                            hostedTokenizationId: result.hostedTokenizationId,
-                            publicHash: active.publicHash,
-                            colorDepth: window.screen.colorDepth.toString(),
-                            javaEnabled: window.navigator.javaEnabled(),
-                            locale: window.navigator.language.toString(),
-                            screenHeight: window.screen.height.toString(),
-                            screenWidth: window.screen.width.toString(),
-                            timezoneOffsetUtcMinutes: (new Date()).getTimezoneOffset().toString()
-                        }
-                    });
+                    setTokenizerData(result);
+                    submitReviewOrder(result);
                 } else if (result.error) {
                     addToast({
                         type: 'error',
@@ -126,7 +152,7 @@ export const useWorldLineVault = props => {
             .finally(() => {
                 //redirect to Success page
             });
-    }, [updatePaymentMethod, cartId, tokenizer, data, active]);
+    }, [updatePaymentMethod, cartId, tokenizer, data, active, tokenizerData]);
 
 
     useEffect(() => {
@@ -162,7 +188,15 @@ export const useWorldLineVault = props => {
         isLoading: loading || isLoading,
         handleClickActive,
         onBillingAddressChangedError,
-        onBillingAddressChangedSuccess
+        onBillingAddressChangedSuccess,
+        isSurchargeEnabled,
+        tokenizer,
+        setTokenizerData,
+        tokenizerData,
+        worldLineConfig,
+        isSurchargeValid,
+        checkSurchargeStatus,
+        checkSurchargeCalculated
     };
 };
 

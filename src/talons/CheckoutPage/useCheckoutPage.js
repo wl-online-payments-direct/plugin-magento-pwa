@@ -4,13 +4,14 @@ import mergeOperations from '@magento/peregrine/lib/util/shallowMerge';
 import {
     useApolloClient,
     useLazyQuery,
-    useMutation
+    useMutation, useQuery
 } from '@apollo/client';
 import { useCartContext } from "@magento/peregrine/lib/context/cart";
 import { paymentMethods } from "@worldline/worldline-payment/src/utils/constants";
 import { clearCartDataFromCache } from "@magento/peregrine/lib/Apollo/clearCartDataFromCache";
 import { CHECKOUT_STEP } from "@magento/peregrine/lib/talons/CheckoutPage/useCheckoutPage";
 import { useUserContext } from "@magento/peregrine/lib/context/user";
+import { useToasts } from "@magento/peregrine";
 
 function isWorldlinePayment (type, code) {
     if (code.indexOf('worldline_redirect_payment') !== -1) {
@@ -20,23 +21,33 @@ function isWorldlinePayment (type, code) {
     return paymentMethods[type].code.includes(code);
 }
 
+function getCode (array, code) {
+    return array.find(element => element === code);
+}
+
 const wrapUseCheckoutPage = (original) => {
     return function useCreateAccount(...args) {
         const {
             handlePlaceOrder,
             orderNumber,
+            checkoutStep,
+            setCheckoutStep,
             ...restProps
         } = original(...args);
+
         const operations = mergeOperations(DEFAULT_OPERATIONS, args.operations);
         const {
             getRedirectUrl,
             getOrderDetailsQuery,
+            getConfigWorldLine,
             worldlineHCPlaceOrderMutation,
             worldlineCCPlaceOrderMutation,
             worldlineRPPlaceOrderMutation,
-            createCartMutation
+            createCartMutation,
+            updateSurchargeMutation
         } = operations;
         const [fetchRedirectUrl, { called,  data, loading }] = useLazyQuery(getRedirectUrl);
+        const [, { addToast }] = useToasts();
 
         const [
             getOrderDetails,
@@ -45,20 +56,83 @@ const wrapUseCheckoutPage = (original) => {
             fetchPolicy: 'no-cache'
         });
 
-        const [fetchCartId] = useMutation(createCartMutation);
+        const { data: worldLineConfig } = useQuery(getConfigWorldLine,{
+            fetchPolicy: 'no-cache'
+        });
+
         const apolloClient = useApolloClient();
+        const [fetchCartId] = useMutation(createCartMutation);
+        const [updateSurchargeSummaryAmount] = useMutation(updateSurchargeMutation);
 
-        const [reviewOrderButtonClicked, setReviewOrderButtonClicked] = useState(
-            false
-        );
-
-        const [checkoutStep, setCheckoutStep] = useState(
-            CHECKOUT_STEP.SHIPPING_ADDRESS
-        );
+        // const [checkoutStep, setCheckoutStep] = useState(CHECKOUT_STEP.SHIPPING_ADDRESS);
+        const [reviewOrderButtonClicked, setReviewOrderButtonClicked] = useState(false);
         const [isPlaceOrderWordlineDone, setIsPlaceOrderWordlineDone] = useState(false);
 
         const [{ isSignedIn }] = useUserContext();
         const [{ cartId }, { createCart, removeCart }] = useCartContext();
+
+        const [paymentMethodCode, setPaymentMethodCode] = useState(null); // currently selected payment method code
+        const [isSurchargeEnabled, setIsSurchargeEnabled] = useState(false); // surcharge should be enabled from the admin
+        const [isSurchargeValid, setSurchargeValid] = useState(false); // surcharge should be rendered because of selected payment method
+        const [isSurchargeCalculated, setIsSurchargeCalculated] = useState(false); // surcharge should be calculated by click on the surcharge-button
+
+        const getPaymentMethodValue = (element) => {
+            setPaymentMethodCode(element.target.value);
+        }
+
+        const checkIfPaymentMethodIsCart = (method) => {
+            return method && getCode(paymentMethods.CC.code, method);
+        }
+
+        // Check / Setup if surcharge should be used at all
+        const checkSurchargeStatus = (status) => {
+            if (typeof(status) === 'boolean') {
+                setSurchargeValid(status);
+            }
+
+            return isSurchargeValid
+        }
+
+        // Check / Setup if surcharge was already calculated
+        const checkSurchargeCalculated = (status) => {
+            if (typeof(status) === 'boolean') {
+                setIsSurchargeCalculated(status);
+            }
+
+            return isSurchargeCalculated;
+        }
+
+        const updateSurchargeSummarySection = () => {
+            let method = paymentMethodCode || JSON.parse(localStorage.getItem('selectedPaymentMethod')).code;
+
+            updateSurchargeSummaryAmount({
+                variables: {
+                    cartId,
+                    selectedPaymentMethod: method
+                }
+            }).then((data) => {
+                let surchargeAmount = data.data.updateSurchargeInformation.cart?.worldline_surcharging?.amount;
+
+                if (checkIfPaymentMethodIsCart(method) && !surchargeAmount) {
+                    checkSurchargeStatus(false);
+                    checkSurchargeCalculated(false);
+                }
+            }).catch((error) => {
+                console.log('surcharge error', error);
+            }) ;
+        };
+
+        // update order summary section for surcharge
+        // when it was calculated or payment method was changed
+        const setShippingMethodDoneWorldline = useCallback(() => {
+            if ((isSurchargeValid && paymentMethodCode) || isSurchargeCalculated) {
+                updateSurchargeSummarySection();
+            }
+
+            if (checkoutStep === CHECKOUT_STEP.SHIPPING_METHOD) {
+                setCheckoutStep(CHECKOUT_STEP.PAYMENT);
+            }
+        }, [checkoutStep, isSurchargeCalculated]);
 
         // Worldline PlaceOrder (no place order, just redirect to payment system)
         const [isPlacingOrderWorldline, setIsPlacingOrderWorldline] = useState(false);
@@ -112,6 +186,31 @@ const wrapUseCheckoutPage = (original) => {
                 loading: rp_loading
             }
         ] = useMutation(worldlineRPPlaceOrderMutation);
+
+
+        // follow changing payment method to toggle 'review order' button
+        useEffect(() => {
+            let isSurchargeEnabledFromConfig = worldLineConfig?.storeConfig?.worldline_is_apply_surcharge;
+            let selectedPaymentMethodIsCart = checkIfPaymentMethodIsCart(paymentMethodCode);
+
+            if (isSurchargeEnabledFromConfig) {
+                checkSurchargeCalculated(false);
+                setIsSurchargeEnabled(isSurchargeEnabledFromConfig);
+
+                // enable 'review order' button and disable surcharge button
+                checkSurchargeStatus(!(isSurchargeEnabledFromConfig && selectedPaymentMethodIsCart));
+            }
+        }, [paymentMethodCode]);
+
+        useEffect(() => {
+            addToast({
+                type: 'info',
+                message: `Please note that a surcharge may be added to the amount you have to pay
+                      depending on the payment method you have chosen.`,
+                dismissable: true,
+                timeout: false
+            });
+        },[addToast, isSurchargeEnabled]);
 
         useEffect(() => {
             async function placeOrderWorldline() {
@@ -245,7 +344,14 @@ const wrapUseCheckoutPage = (original) => {
             orderNumber,
             orderDetailsData,
             customHandlePlaceOrder,
-            ...restProps
+            isSurchargeValid,
+            getPaymentMethodValue,
+            checkSurchargeStatus,
+            checkSurchargeCalculated,
+            setShippingMethodDoneWorldline,
+            ...restProps,
+            checkoutStep,
+            setCheckoutStep
         }
     };
 };
