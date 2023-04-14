@@ -28,6 +28,9 @@
 
 ## Release notes
 
+#### 1.6.0
+- Add surcharge functionality.
+
 #### 1.5.0
 - Support the 13.0.0 version of PWA.
 
