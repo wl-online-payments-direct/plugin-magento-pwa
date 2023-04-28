@@ -86,6 +86,10 @@ const wrapUseCheckoutPage = (original) => {
 
         // Check / Setup if surcharge should be used at all
         const checkSurchargeStatus = (status) => {
+            if (!status && !isSurchargeEnabled) {
+                return true
+            }
+
             if (typeof(status) === 'boolean') {
                 setSurchargeValid(status);
             }
@@ -203,6 +207,10 @@ const wrapUseCheckoutPage = (original) => {
         }, [paymentMethodCode]);
 
         useEffect(() => {
+            if (!isSurchargeEnabled) {
+                return
+            }
+
             addToast({
                 type: 'info',
                 message: `Please note that a surcharge may be added to the amount you have to pay

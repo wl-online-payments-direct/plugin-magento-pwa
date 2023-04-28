@@ -118,10 +118,9 @@ module.exports = (targets) => {
               '\n        checkSurchargeCalculated,'
     );
 
-    CheckoutPaymentMethods.insertBeforeSource(
-        'onChange={handlePaymentMethodSelection}',
-        'onChange={e => onSelect(e)}',
-        { remove: 39 }
+    CheckoutPaymentMethods.insertAfterSource(
+        '<Radio',
+        '\n onChange={e => onSelect(e)}'
     );
 
     PriceSummary.insertBeforeSource(
@@ -157,7 +156,7 @@ module.exports = (targets) => {
     '\n     customHandlePlaceOrder,'
     );
 
-    CheckoutPage.insertBeforeSource(
+    CheckoutPage.insertAfterSource(
     'onClick={handlePlaceOrder}',
     'onClick={customHandlePlaceOrder}',
     { remove: 26 }

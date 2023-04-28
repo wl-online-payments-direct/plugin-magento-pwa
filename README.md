@@ -28,8 +28,11 @@
 
 ## Release notes
 
+#### 1.6.1
+- Fix for placing orders if Worldline payment methods are disabled
+
 #### 1.6.0
-- Add surcharge functionality.
+- Bug fixes and general improvements.
 
 #### 1.5.0
 - Support the 13.0.0 version of PWA.
